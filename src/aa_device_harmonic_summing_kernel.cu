@@ -160,17 +160,21 @@ __global__ void three_dimensional_greedy_harmonic_sum(float *d_maxSNR, ushort *d
         // index for storing elements into output arrays, d_maxSNR and d_maxHarmonics
         const size_t output_pos = (max_f_idx * ( max_fdot_idx * f_fdot_idx + fdot_idx) + f_idx);
 
-        size_t dd_pos = fdot_idx * N_f + f_idx;
-        size_t ds_pos = fdot_idx * N_f + (f_idx + 1);
-        size_t sd_pos = (fdot_idx + 1) * N_f + f_idx;
-        size_t ss_pos = (fdot_idx + 1) * N_f * (f_idx + 1);
+        size_t f_pos = (N_f * (N_fdot * f_fdot_idx + fdot_idx) + f_idx);
+        size_t f_pos_adj = (N_f * (N_fdot * f_fdot_idx + fdot_idx) + f_idx + 1);
+        size_t w_pos = (N_f * (N_fdot * f_fdot_idx + (fdot_idx+1)) + f_idx);
+        size_t w_pos_adj = (N_f * (N_fdot * f_fdot_idx + (fdot_idx+1)) + f_idx + 1);
+        size_t z_pos = (N_f * (N_fdot * (f_fdot_idx+1) + fdot_idx) + f_idx);
+        size_t z_pos_adj = (N_f * (N_fdot * (f_fdot_idx+1) + fdot_idx) + f_idx + 1);
 
         // bound checking to make sure no invalid memory access
-        if (ss_pos < (N_f * N_fdot)) {
-            float dd_power = d_input[dd_pos];
-            float ds_power = d_input[ds_pos];
-            float sd_power = d_input[sd_pos];
-            float ss_power = d_input[ss_pos];
+        if (z_pos_adj < (N_f * N_fdot * N_f_fdot)) {
+            float f_power = d_input[f_pos];
+            float f_adj_power = d_input[f_pos_adj];
+            float w_power = d_input[w_pos];
+            float w_adj_power = d_input[w_pos_adj];
+            float z_power = d_input[z_pos];
+            float z_adj_power = d_input[z_pos_adj];
 
             // Find max power out of all four powers
             float quad[4] = {dd_power, ds_power, sd_power, ss_power};
