@@ -176,21 +176,27 @@ __global__ void three_dimensional_greedy_harmonic_sum(float *d_maxSNR, ushort *d
             float z_power = d_input[z_pos];
             float z_adj_power = d_input[z_pos_adj];
 
-            // Find max power out of all four powers
-            float quad[4] = {dd_power, ds_power, sd_power, ss_power};
+            // Find max power out of all six powers
+            float hecta[6] = {f_power, f_adj_power, w_power, w_adj_power,z_power, z_adj_power};
             float maxVal = 0.0;
-            float *p_maxVal = quad;
-            for (int i = 0; i < 4; ++i) {
-                if (quad[i] > maxVal) {
-                    maxVal = quad[i];
-                    p_maxVal = quad + i;
+            float *p_maxVal = hecta;
+            for (int i = 0; i < 6; ++i) {
+                if (hecta[i] > maxVal) {
+                    maxVal = hecta[i];
+                    p_maxVal = hecta + i;
                 }
             }
-            if (p_maxVal == quad + 1) {
+            if (p_maxVal == hecta + 1) {
                 ++f_drift;
-            } else if (p_maxVal == quad + 2) {
+            } else if (p_maxVal == hecta + 2) {
                 ++fdot_drift;
-            } else if (p_maxVal == quad + 3) {
+            } else if (p_maxVal == hecta + 3) {
+                ++fdot_drift;
+                ++f_drift;
+            } else if (p_maxVal == hecta + 4) {
+                ++f_fdot_drift;
+            } else if (p_maxVal == hecta + 5) {
+                ++f_fdot_drift;
                 ++fdot_drift;
                 ++f_drift;
             }
@@ -203,40 +209,48 @@ __global__ void three_dimensional_greedy_harmonic_sum(float *d_maxSNR, ushort *d
                 d_maxSNR[output_pos] = SNR;
                 d_maxHarmonics[output_pos] = harmonic_order;
             }
-
             // higher harmonics
-            for (size_t h = 1; (h <= nHarmonics) && (((h + 1) * fdot_idx + fdot_drift + 1) * N_f + ((h + 1) * f_idx + f_drift + 1)) < (N_f * N_fdot); ++h) {
-                dd_pos = ((h + 1) * fdot_idx + fdot_drift) * N_f + ((h + 1) * f_idx + f_drift);
-                ds_pos = ((h + 1) * fdot_idx + fdot_drift) * N_f + ((h + 1) * f_idx + f_drift + 1);
-                sd_pos = ((h + 1) * fdot_idx + fdot_drift + 1) * N_f + ((h + 1) * f_idx + f_drift);
-                ss_pos = ((h + 1) * fdot_idx + fdot_drift + 1) * N_f + ((h + 1) * f_idx + f_drift + 1);
+            for (size_t h = 1; (h <= nHarmonics) && ( N_f * (N_fdot * (h * N_f_fdot + f_fdot_drift + 1) + (h * fdot_idx + fdot_drift + 1)) + (h * f_idx + f_drift + 1)) < (N_f * N_fdot * N_f_fdot); ++h) {
+                f_pos = (h * fdot_idx + fdot_drift) * N_f + (h  * f_idx + f_drift);
+                f_pos_adj = (h * fdot_idx + fdot_drift) * N_f + (h  * f_idx + f_drift + 1);
+                w_pos = (h * fdot_idx + fdot_drift + 1) * N_f + (h * f_idx + f_drift);
+                w_pos_adj = (h  * fdot_idx + fdot_drift + 1) * N_f + (h * f_idx + f_drift + 1);
+                z_pos = N_f * (N_fdot * (h * N_f_fdot + f_fdot_drift) + (h * fdot_idx + fdot_drift)) + (h * f_idx + f_drift);
+                z_pos_adj = N_f * (N_fdot * (h * N_f_fdot + f_fdot_drift + 1) + (h * fdot_idx + fdot_drift + 1)) + (h * f_idx + f_drift + 1);
+        
+                f_power = d_input[f_pos];
+                f_adj_power = d_input[f_pos_adj];
+                w_power = d_input[w_pos];
+                w_adj_power = d_input[w_pos_adj];
+                z_power = d_input[z_pos];
+                z_adj_power = d_input[z_pos_adj];
 
-                dd_power = d_input[dd_pos];
-                ds_power = d_input[ds_pos];
-                sd_power = d_input[sd_pos];
-                ss_power = d_input[ss_pos];
-
-                float quad[4] = {dd_power, ds_power, sd_power, ss_power};
-                float maxVal = 0.0;
-                float *p_maxVal = quad;
-                for (int i = 0; i < 4; ++i) {
-                    if (quad[i] > maxVal) {
-                        maxVal = quad[i];
-                        p_maxVal = quad + i;
-                    }
+            float hecta[6] = {f_power, f_adj_power, w_power, w_adj_power,z_power, z_adj_power};
+            float maxVal = 0.0;
+            float *p_maxVal = hecta;
+            for (int i = 0; i < 6; ++i) {
+                if (hecta[i] > maxVal) {
+                    maxVal = hecta[i];
+                    p_maxVal = hecta + i;
                 }
-                if (p_maxVal == quad + 1) {
-                    ++f_drift;
-                } else if (p_maxVal == quad + 2) {
-                    ++fdot_drift;
-                } else if (p_maxVal == quad + 3) {
-                    ++fdot_drift;
-                    ++f_drift;
-                }
+            }
+            if (p_maxVal == hecta + 1) {
+                ++f_drift;
+            } else if (p_maxVal == hecta + 2) {
+                ++fdot_drift;
+            } else if (p_maxVal == hecta + 3) {
+                ++fdot_drift;
+                ++f_drift;
+            } else if (p_maxVal == hecta + 4) {
+                ++f_fdot_drift;
+            } else if (p_maxVal == hecta + 5) {
+                ++f_fdot_drift;
+                ++fdot_drift;
+                ++f_drift;
+            }
 
-                partial_sum += maxVal;
-                SNR = fdividef((partial_sum - d_mean[h]), d_stdev[h]);
-
+            double partial_sum = maxVal;
+            SNR = fdividef((partial_sum - d_mean[0]), d_stdev[0]);
                 // update output arrays
                 if (SNR > d_maxSNR[output_pos]) {
                     d_maxSNR[output_pos] = SNR;
