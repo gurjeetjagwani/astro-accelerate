@@ -261,11 +261,6 @@ __global__ void three_dimensional_greedy_harmonic_sum(float *d_maxSNR, ushort *d
     }
 }
 
-template<class const_params>
-__global__ void three_dimensional_chi_square_harmonic_sum(float *d_maxSNR, ushort *d_maxHarmonics, float const* __restrict__ d_input, float const* __restrict__ d_MSD, int nTimesamples, int nDMs, int nHarmonics)
-{
-
-}
 
 template<class const_params>
 __global__ void presto_plus_harmonic_sum_GPU_kernel(float *d_maxSNR, ushort *d_maxHarmonics, float const* __restrict__ d_input, float const* __restrict__ d_MSD, int nTimesamples, int nDMs, int nHarmonics){
